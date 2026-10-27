@@ -1,0 +1,13 @@
+Sys. de fichiers      Taille Utilisé Dispo Uti% Monté sur
+/dev/mapper/rhel-root    34G    7,1G   27G  22% /
+devtmpfs                1,8G       0  1,8G   0% /dev
+tmpfs                   1,8G       0  1,8G   0% /dev/shm
+efivarfs                256K     76K  176K  31% /sys/firmware/efi/efivars
+tmpfs                   725M    9,6M  715M   2% /run
+tmpfs                   1,0M       0  1,0M   0% /run/credentials/systemd-journald.service
+/dev/nvme0n1p2          2,0G    437M  1,6G  22% /boot
+/dev/nvme0n1p1          599M    9,0M  590M   2% /boot/efi
+tmpfs                   363M     72K  362M   1% /run/user/42
+tmpfs                   363M     56K  363M   1% /run/user/1000
+mar. 27 oct. 2026 22:33:20 CET
+mar. 27 oct. 2026 22:35:19 CET

@@ -1,0 +1,46 @@
+# Commandes du Jour 1 et de la sauvegarde de /etc/motd, exécutées mais perdues dans l'historique Bash :
+#   cat /etc/redhat-release
+#   hostnamectl
+#   mkdir ~/PPE-C02-SYS-P03_Assaga_Alexandra
+#   cd ~/PPE-C02-SYS-P03_Assaga_Alexandra
+#   sudo cp /etc/motd /etc/motd.bak
+#   ls -l /etc/motd*
+# (captures de ces étapes dans la documentation HackMD)
+
+   56  sudo vim /etc/motd
+   57  cat /etc/motd
+   58  ls /root 2> erreurs.log > sortie.txt
+   59  cat erreurs.log
+   60  cat sortie.txt
+   61  ls -l sortie.txt
+   62  mv ~/erreurs.log ~/sortie.txt ~/PPE-C02-SYS-P03_Assaga_Alexandra/
+   63  cd ~/PPE-C02-SYS-P03_Assaga_Alexandra
+   64  ls /root /etc 2> erreurs.log > sortie.txt
+   65  cat erreurs.log
+   66  cat sortie.txt
+   67  echo "--- Ajout du $(date) ---" >> sortie.txt
+   68  tail -3 sortie.txt
+   69  ps aux | grep sshd
+   70  cat /etc/passwd | cut -d: -f1 | sort | head
+   71  df -h > rapport.txt
+   72  date > rapport.txt
+   73  cat rapport.txt
+   74  df -h > rapport.txt
+   75  date >> rapport.txt
+   76  cat rapport.txt
+   77  cp /etc/motd ~/PPE-C02-SYS-P03_Assaga_Alexandra/motd.modifie
+   78  history | awk '$1 >= 56' > ~/PPE-C02-SYS-P03_Assaga_Alexandra/historique.txt
+   79  head -3 ~/PPE-C02-SYS-P03_Assaga_Alexandra/historique.txt
+   80  ls -l ~/PPE-C02-SYS-P03_Assaga_Alexandra
+   81  cat ~/PPE-C02-SYS-P03_Assaga_Alexandra/historique.txt
+   82  df -h > rapport.txt
+   83  date >> rapport.txt
+   84  cat rapport.txt
+   85  date | tee -a rapport.txt
+   86  vim /etc/motd
+   87  ls -l /etc/motd 
+   88  history | awk '$1 >= 56' > ~/PPE-C02-SYS-P03_Assaga_Alexandra/historique.txt
+   89  head -3 ~/PPE-C02-SYS-P03_Assaga_Alexandra/historique.txt
+   90  grep -iE "pass|token|secret" ~/PPE-C02-SYS-P03_Assaga_Alexandra/historique.txt
+   91  history | sed -n '40,60p'
+   92  { echo "# Commandes du Jour 1 et de la sauvegarde de /etc/motd, exécutées mais perdues dans l'historique Bash :"; echo "#   cat /etc/redhat-release"; echo "#   hostnamectl"; echo "#   mkdir ~/PPE-C02-SYS-P03_Assaga_Alexandra"; echo "#   cd ~/PPE-C02-SYS-P03_Assaga_Alexandra"; echo "#   sudo cp /etc/motd /etc/motd.bak"; echo "#   ls -l /etc/motd*"; echo "# (captures de ces étapes dans la documentation HackMD)"; echo ""; history | awk '$1 >= 56'; } > ~/PPE-C02-SYS-P03_Assaga_Alexandra/historique.txt

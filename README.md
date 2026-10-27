@@ -10,8 +10,8 @@ Chaque dossier contient les fichiers produits pendant le TP (historique des comm
 
 | PPE | Sujet | Statut | Documentation |
 |---|---|---|---|
-| [PPE-C02-SYS-P01](./PPE-C02-SYS-P01_Prise-en-main-RHEL) | Prise en main de RHEL 10 et de la documentation locale + supervision Wazuh | ✅ Terminé | [HackMD](https://hackmd.io/@Alexandra-ASSAGA/rJZgCEG2fx) |
-| PPE-C02-SYS-P03 | Édition de fichiers, redirections et tubes | 🚧 En cours | — |
+| [PPE-C02-SYS-P01](./PPE-C02-SYS-P01_Prise-en-main-RHEL) | Prise en main de RHEL 10 et de la documentation locale + supervision Wazuh | Terminé | [HackMD](https://hackmd.io/@Alexandra-ASSAGA/rJZgCEG2fx) |
+| [PPE-C02-SYS-P03](./PPE-C02-SYS-P03_Redirections-tubes) | Édition de fichiers, redirections et tubes | Terminé | [HackMD](https://hackmd.io/@Alexandra-ASSAGA/Hya3AIRhGl) |
 
 ---
 

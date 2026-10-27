@@ -1,1 +1,720 @@
+---
+title: PPE-C02-SYS-P01 — Administrer un système Linux Red Hat (RHEL) et supervision Wazuh
+tags: [RHEL, Linux, RH124, Wazuh, SIEM, PPE, GIT]
+---
 
+# PPE-C02-SYS-P01 — Administrer un système Linux Red Hat (RHEL) et supervision Wazuh
+
+| Élément | Détail |
+|---|---|
+| Compétence | PPE-C02-SYS — Administrer un système Linux Red Hat (RHEL) |
+| Référence | RH124 — modules 1 à 3 |
+| Niveau | Débutant |
+| Durée estimée | 2 h (TP) + supervision Wazuh (extension) |
+| Barème | 20 pts |
+| Auteur du TP | Alexandra Assaga |
+| Contexte | Cabinet Dufour SA (données fictives) |
+
+[TOC]
+
+---
+
+## 1. Objectifs
+
+**TP RHEL (noté)**
+- Ouvrir un shell et se repérer sur le système.
+- Utiliser la documentation locale (`man`, `info`, `help`, `--help`, `apropos`).
+- Documenter la procédure d'enregistrement auprès de Red Hat.
+- Produire un journal clair et reproductible.
+
+**Extension : supervision de sécurité**
+- Déployer un serveur SIEM/XDR **Wazuh** (manager + indexer + dashboard).
+- Installer l'**agent Wazuh** sur la VM RHEL 10.
+- Valider la détection par un scénario d'attaque (brute force SSH).
+
+---
+
+## 2. Environnement
+
+### 2.1 Architecture du lab
+
+| Machine | Rôle | Système | Adresse IP |
+|---|---|---|---|
+| rhel10 | Serveur cible des TP + endpoint supervisé (agent Wazuh) | RHEL 10.2 | 192.168.129.132 |
+| wazuh-server | Wazuh manager + indexer + dashboard | Ubuntu Server 24.04.3 LTS | 192.168.129.133 |
+| poste-admin | Poste de contrôle (client SSH, navigateur) | Windows | 192.168.129.1 |
+
+- **Hyperviseur** : VMware Workstation
+- **Réseau** : NAT (VMnet8), les 3 machines sont sur le même sous-réseau `192.168.129.0/24`
+
+### 2.2 Caractéristiques des VM
+
+| Paramètre | rhel10 | wazuh-server |
+|---|---|---|
+| ISO | `rhel-10.2-x86_64-dvd.iso` | `ubuntu-24.04.3-live-server-amd64.iso` |
+| vCPU | 2 | 4 |
+| RAM | 4 Go | 8 Go |
+| Disque | 40 Go (NVMe) | 50 Go (SCSI, LVM) |
+| Réseau | NAT (VMnet8) | NAT (VMnet8) |
+
+### 2.3 Ressources utilisées
+
+| Sujet | Source |
+|---|---|
+| Installation de RHEL 10 sur VMware Workstation | [Vidéo r2schools — Install RHEL 10 on VMware Workstation](https://www.youtube.com/watch?v=HrFOfqMsxcc) |
+| Installation du serveur Wazuh | [Wazuh — Installing the Wazuh server step by step](https://documentation.wazuh.com/current/installation-guide/wazuh-server/step-by-step.html) |
+| Déploiement de l'agent Wazuh sur Linux | [Wazuh — Deploying Wazuh agents on Linux endpoints](https://documentation.wazuh.com/current/installation-guide/wazuh-agent/wazuh-agent-package-linux.html) |
+
+---
+
+# PARTIE A : Installation de RHEL 10 sur VMware Workstation
+
+> Procédure suivie : [Install RHEL 10 on VMware Workstation (r2schools)](https://www.youtube.com/watch?v=HrFOfqMsxcc). La vidéo couvre le téléchargement de l'ISO depuis le portail Red Hat, la création de la VM dans VMware et l'installation.
+
+## A.1 Création de la VM dans VMware
+
+![image](https://hackmd.io/_uploads/rJ4PCS53Mx.png)
+![image](https://hackmd.io/_uploads/SJLxlBc2Mx.png)
+![image](https://hackmd.io/_uploads/rylZlH9nfg.png)
+![image](https://hackmd.io/_uploads/BkWzlBc2fl.png)
+![image](https://hackmd.io/_uploads/rktU6LG3Mx.png)
+![image](https://hackmd.io/_uploads/SyW7er93Mg.png)
+![image](https://hackmd.io/_uploads/rJYXerqnGx.png)
+![image](https://hackmd.io/_uploads/H1pQeS52zl.png)
+![image](https://hackmd.io/_uploads/B1ErfSqhfe.png)
+![image](https://hackmd.io/_uploads/BJUq3Lfnfx.png)
+![image](https://hackmd.io/_uploads/H1Q6nIz2zx.png)
+![image](https://hackmd.io/_uploads/HyHidUz3Ge.png)
+![image](https://hackmd.io/_uploads/H1r2_IMnzx.png)
+![image](https://hackmd.io/_uploads/Sy86_IGnzg.png)
+![image](https://hackmd.io/_uploads/ry4yF8z2Mg.png)
+![image](https://hackmd.io/_uploads/r1qMFIM2fx.png)
+![image](https://hackmd.io/_uploads/S1h4YIfnzg.png)
+![image](https://hackmd.io/_uploads/BkLZiLG2zl.png)
+![image](https://hackmd.io/_uploads/S1PzoLM3Me.png)
+![image](https://hackmd.io/_uploads/B1r43UG2zl.png)
+![image](https://hackmd.io/_uploads/SyLcHizhMl.png)
+![image](https://hackmd.io/_uploads/SJSl7Bc2ze.png)
+![image](https://hackmd.io/_uploads/Sk2xLifnze.png)
+
+## A.2 Installation de RHEL 10
+
+**Menu GRUB** : choix de **« Install Red Hat Enterprise Linux 10 »**. L'option « Test this media » vérifie l'ISO, ce qui est inutile pour une ISO officielle et ralentit l'installation.
+
+Réglages dans l'installateur :
+- **Langue / clavier** : français
+- **Destination** : disque de 40 Go, partitionnement **automatique**, sans chiffrement
+- **Réseau et nom d'hôte** : interface activée
+- **Sélection logicielle** : *Server* (sans interface graphique)
+- **Mot de passe root** : défini
+- **Utilisateur** : `alexandra`, avec droits d'administration (groupe `wheel`, donc `sudo`)
+
+![image](https://hackmd.io/_uploads/r1nI7H9nzg.png)
+![image](https://hackmd.io/_uploads/S1vOXS9hfx.png)
+![image](https://hackmd.io/_uploads/SkQKmH92Gl.png)
+![image](https://hackmd.io/_uploads/SkTp8Hq3Gg.png)
+![image](https://hackmd.io/_uploads/BkgnmB53zl.png)
+![image](https://hackmd.io/_uploads/HkcAmHqnMg.png)
+![image](https://hackmd.io/_uploads/r1gZNr9hzx.png)
+![image](https://hackmd.io/_uploads/By82HS5nGx.png)
+![image](https://hackmd.io/_uploads/B1B6rr53Gg.png)
+![image](https://hackmd.io/_uploads/SksTBS53fe.png)
+![image](https://hackmd.io/_uploads/SkGQIrc2Gl.png)
+![image](https://hackmd.io/_uploads/B1m3LSchGe.png)
+![image](https://hackmd.io/_uploads/BkD-_r9nfx.png)
+![image](https://hackmd.io/_uploads/SJ-4_Hqnfl.png)
+![image](https://hackmd.io/_uploads/BJVr_rq2Mx.png)
+![image](https://hackmd.io/_uploads/BJWyqSq2ze.png)
+![image](https://hackmd.io/_uploads/S1Ngorqhfl.png)
+![image](https://hackmd.io/_uploads/ByBNsS9hfg.png)
+
+> Le nom d'hôte n'avait pas été défini pendant l'installation (`localhost.localdomain`). Il a été corrigé ensuite (voir C.2.1) :
+> ```bash
+> sudo hostnamectl set-hostname rhel10
+> ```
+
+## A.3 Vérification de l'accès console
+
+```bash
+cat /etc/redhat-release
+hostnamectl
+```
+
+![image](https://hackmd.io/_uploads/rybKoHqnzg.png)
+![image](https://hackmd.io/_uploads/BJR9sSq3Gl.png)
+
+## A.4 Vérification de l'accès SSH
+
+Sur `rhel10` :
+
+```bash
+ip a                     # repérer l'adresse IP
+systemctl status sshd    # le service doit être "active (running)"
+```
+
+![image](https://hackmd.io/_uploads/Hy9nsB52zx.png)
+![image](https://hackmd.io/_uploads/S1X1nHqhfe.png)
+![Capture d'écran 2026-10-24 171917](https://hackmd.io/_uploads/rkct2Sqhzl.png)
+![Capture d'écran 2026-10-24 172055](https://hackmd.io/_uploads/HyKy6rchGg.png)
+![Capture d'écran 2026-10-24 172155](https://hackmd.io/_uploads/SJrQarqhMg.png)
+![image](https://hackmd.io/_uploads/B1xWvpH53Gl.png)
+
+Depuis `poste-admin` (PowerShell) :
+
+```powershell
+ssh alexandra@192.168.129.132
+```
+
+> **Erreur rencontrée** : `WARNING: REMOTE HOST IDENTIFICATION HAS CHANGED!`
+> **Cause** : la VM réinstallée a récupéré la même IP qu'une ancienne machine, dont l'empreinte était restée dans `known_hosts`.
+> **Solution** : supprimer l'ancienne empreinte, puis se reconnecter et accepter la nouvelle (`yes`) :
+> ```powershell
+> ssh-keygen -R 192.168.129.132
+> ```
+
+![image](https://hackmd.io/_uploads/HyGTTBq2Gl.png)
+![image](https://hackmd.io/_uploads/B1yZRSqnMx.png)
+![image](https://hackmd.io/_uploads/SyNMCr92zx.png)
+
+**Livrable** : procédure de démarrage et version du système.
+
+---
+
+# PARTIE B : TP RHEL : shell, documentation, enregistrement
+
+## B.1 Tâche 1 : Shell et commandes (5 pts)
+
+### Commandes
+
+```bash
+whoami                    # utilisateur connecté
+hostname                  # nom de la machine
+uname -r                  # version du noyau
+cat /etc/redhat-release   # version de RHEL
+```
+
+![image](https://hackmd.io/_uploads/B1osmIqhzl.png)
+
+### Résultats obtenus
+
+| Information | Commande | Résultat |
+|---|---|---|
+| Utilisateur | `whoami` | *alexandra* |
+| Nom d'hôte | `hostname` | *localhost.localdomain* (renommé ensuite en `rhel10`) |
+| Noyau | `uname -r` | *6.12.0-211.7.3.el10_2.x86_64* |
+| Version RHEL | `cat /etc/redhat-release` | *Red Hat Enterprise Linux release 10.2 (Coughlan)* |
+
+### Historique et raccourcis
+
+| Commande / raccourci | Effet |
+|---|---|
+| `history` | Affiche les commandes déjà saisies |
+| `!n` | Relance la commande numéro *n* |
+| `!!` | Relance la dernière commande |
+| `Ctrl + R` | Recherche dans l'historique |
+| `Tab` | Complète une commande ou un chemin |
+| `Ctrl + A` / `Ctrl + E` | Début / fin de ligne |
+| `Ctrl + U` | Efface la ligne jusqu'au curseur |
+| `Ctrl + L` | Efface l'écran |
+
+![image](https://hackmd.io/_uploads/BJAD4852zx.png)
+
+**Contrôle** : les quatre informations sont notées dans le journal.
+
+## B.2 Tâche 2 : Documentation locale (5 pts)
+
+### Commandes
+
+```bash
+man ls            # manuel complet de ls (quitter avec q, chercher avec /mot)
+man -k passwd     # recherche par mot-clé dans les descriptions
+info coreutils    # documentation info (si le paquet est installé)
+help cd           # aide d'une commande interne du shell
+cd --help         # aide intégrée
+type cd           # → commande interne (builtin)
+type ls           # → commande externe (fichier binaire)
+```
+![image](https://hackmd.io/_uploads/SJj9pa22fx.png)
+![image](https://hackmd.io/_uploads/S1Jtaa33fe.png)
+![image](https://hackmd.io/_uploads/rkZkxI6hzx.png)
+
+> Si `man -k` ne renvoie rien, reconstruire l'index : `sudo mandb`
+![image](https://hackmd.io/_uploads/HJAOCB6nze.png)
+![image](https://hackmd.io/_uploads/B1ScAH6nfg.png)
+![image](https://hackmd.io/_uploads/ryn3Ara3Mx.png)
+![image](https://hackmd.io/_uploads/S15QJ8ThGg.png)
+![image](https://hackmd.io/_uploads/B1ZIkUphGg.png)
+![image](https://hackmd.io/_uploads/Hy-qkLT2fg.png)
+
+### Quel outil pour quel besoin ?
+
+| Outil | Usage |
+|---|---|
+| `man` | Documentation de référence d'une commande ou d'un fichier |
+| `man -k` / `apropos` | Trouver une commande à partir d'un mot-clé |
+| `info` | Documentation détaillée (projets GNU) |
+| `help` | Aide des commandes internes de Bash (`cd`, `echo`, `history`…) |
+| `--help` | Résumé rapide des options d'une commande |
+
+## B.3 Tâche 3 : Enregistrement du système (5 pts)
+
+### Procédure
+
+```bash
+sudo subscription-manager register --username <compte_redhat>
+sudo subscription-manager status   # vérifier l'état de l'enregistrement
+sudo dnf repolist                  # vérifier l'accès aux dépôts
+```
+![image](https://hackmd.io/_uploads/ByvrxL62fx.png)
+![image](https://hackmd.io/_uploads/HkLtW8TnMg.png)
+
+> Avec un compte Red Hat Developer, l'enregistrement donne accès aux dépôts officiels (BaseOS et AppStream).
+
+### Limite du labo
+
+Aucune : l'enregistrement a réussi (fait pendant l'installation) et la VM accède aux dépôts officiels BaseOS et AppStream via le réseau NAT. L'alternative d'un dépôt local à partir du DVD n'a donc pas été nécessaire.
+
+**Contrôle** : la procédure est documentée et l'enregistrement est vérifié.
+
+## B.4 Dépannage
+
+### Scénario 1 : Commande introuvable (PATH)
+
+Simulation :
+
+```bash
+export PATH=/tmp    # on casse volontairement le PATH
+ls                  # → bash: ls: command not found
+echo $PATH          # diagnostic : le PATH ne contient plus /usr/bin
+```
+![image](https://hackmd.io/_uploads/B1DeQUT3Mg.png)
+
+Correction :
+
+```bash
+export PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+ls                  # fonctionne de nouveau
+```
+![image](https://hackmd.io/_uploads/rJI778p2zl.png)
+
+> La modification n'affecte que la session en cours : fermer et rouvrir le terminal restaure aussi le PATH.
+
+*Résultat obtenu : À compléter*
+
+### Scénario 2 : La documentation ne répond pas
+
+```bash
+apropos partition       # trouver les commandes liées aux partitions
+apropos -s 8 user       # limiter la recherche à la section 8 (administration)
+```
+![image](https://hackmd.io/_uploads/H1UO7UT2Mx.png)
+![image](https://hackmd.io/_uploads/HyFhX8anGg.png)
+![image](https://hackmd.io/_uploads/BkyGSUahGx.png)
+
+> Si `apropos` renvoie « nothing appropriate » : `sudo mandb`, puis relancer.
+
+***Résultat obtenu:***
+
+| Commande | Résultat | Commandes utiles repérées |
+|---|---|---|
+| `apropos partition` | 20 pages trouvées, principalement en section 8 | `fdisk`, `parted`, `cfdisk`, `sfdisk`, `partprobe`, `resizepart` |
+| `apropos -s 8 user` | Résultats limités aux commandes d'administration | `useradd`, `usermod`, `userdel`, `newusers`, `lastlog`, `sudo` |
+
+> L'erreur « nothing appropriate » ne s'est pas produite ici, car l'index avait déjà été reconstruit avec `sudo mandb` lors de la Tâche 2 (où `man -k passwd` renvoyait « rien d'adéquat » avant correction).
+
+**Intérêt de `-s`** : sans filtre, `apropos user` renverrait aussi les fonctions de programmation (section 3). L'option `-s 8` cible directement les outils d'administration système, ce qui est le besoin d'un administrateur.
+
+## B.5 Tâche 4 : Journal (5 pts)
+
+| # | Date | Action | Commande / méthode | Résultat |
+|---|---|---|---|---|
+| 1 | 24/10/2026 | Création de la VM et installation de RHEL 10.2 | VMware Workstation, ISO `rhel-10.2-x86_64-dvd.iso`, option GRUB « Install Red Hat Enterprise Linux 10 » | Installation réussie : partitionnement automatique, utilisateur `alexandra` membre de `wheel` |
+| 2 | 24/10/2026 | Enregistrement auprès de Red Hat | Écran « Se connecter à Red Hat » de l'installateur | Système enregistré dès le premier démarrage |
+| 3 | 24/10/2026 | Connexion SSH depuis Windows | `ssh alexandra@192.168.129.132` | Erreur `REMOTE HOST IDENTIFICATION HAS CHANGED` → corrigée avec `ssh-keygen -R 192.168.129.132` |
+| 4 | 26/10/2026 | Identification du système | `whoami`, `hostname`, `uname -r`, `cat /etc/redhat-release` | `alexandra` / noyau `6.12.0-211.7.3.el10_2` / RHEL 10.2 (Coughlan) |
+| 5 | 26/10/2026 | Attribution d'un nom d'hôte | `sudo hostnamectl set-hostname rhel10` | Prompt `alexandra@rhel10` (auparavant `localhost.localdomain`) |
+| 6 | 26/10/2026 | Recherche par mot-clé dans les manuels | `man -k passwd` | « rien d'adéquat » → index reconstruit avec `sudo mandb` → 16 pages trouvées, dont `passwd (1)` (commande) et `passwd (5)` (fichier) |
+| 7 | 26/10/2026 | Identification du type de commande | `type cd`, `type ls` | `cd` = primitive du shell (aide : `help cd`) ; `ls` = alias vers `ls --color=auto` |
+| 8 | 26/10/2026 | Recherche ciblée par section | `apropos partition`, `apropos -s 8 user` | Outils de partitionnement trouvés (`fdisk`, `parted`…) ; `-s 8` limite aux commandes d'administration (`useradd`, `usermod`…) |
+| 9 | 26/10/2026 | Vérification de l'enregistrement | `sudo subscription-manager status` | État général : **Enregistré** |
+| 10 | 26/10/2026 | Vérification des dépôts | `sudo dnf repolist` | BaseOS et AppStream actifs |
+
+### Points clés retenus
+
+- Un index de manuels vide (`man -k` sans résultat) se reconstruit avec `sudo mandb`.
+- Une même page peut exister dans plusieurs sections : `man passwd` (section 1) ≠ `man 5 passwd` (section 5).
+- L'aide dépend du type de commande : `help` pour une primitive, `man` pour une commande externe.
+- Une machine réinstallée avec la même IP déclenche une alerte SSH : il faut supprimer l'ancienne empreinte.
+
+**Contrôle** : le journal est clair et reproductible.
+
+---
+
+# PARTIE C : Supervision de sécurité avec Wazuh
+
+## C.1 Installation du serveur Wazuh (Ubuntu Server 24.04)
+
+> Référence : [Installing the Wazuh server step by step](https://documentation.wazuh.com/current/installation-guide/wazuh-server/step-by-step.html)
+>
+> Le guide *step by step* détaille l'installation manuelle de chaque brique du serveur : ajout du dépôt Wazuh, **Wazuh manager**, **Filebeat** (qui transmet les alertes à l'indexer), déploiement des **certificats**, connexion à l'indexer, puis démarrage des services. Il faut ensuite installer séparément l'indexer et le dashboard.
+>
+> **Méthode retenue** : pour un serveur de lab unique, j'ai utilisé l'**assistant d'installation all-in-one** (`wazuh-install.sh -a`). Il automatise exactement ces étapes et installe en plus l'indexer et le dashboard sur le même hôte. Le guide step by step m'a servi à comprendre le rôle de chaque composant.
+
+### C.1.1 Préparation de la VM
+
+| Paramètre | Valeur |
+|---|---|
+| Nom d'hôte | `wazuh-server` |
+| Utilisateur | `alexandra` |
+| Stockage | Disque entier, LVM, sans LUKS |
+| SSH | OpenSSH server installé |
+
+![image](https://hackmd.io/_uploads/BJHISlp3Ml.png)
+![image](https://hackmd.io/_uploads/r139BephGx.png)
+![image](https://hackmd.io/_uploads/H1blUg6hfe.png)
+![image](https://hackmd.io/_uploads/HJ4NSla2Gx.png)
+![image](https://hackmd.io/_uploads/rJB-8lpnGe.png)
+![image](https://hackmd.io/_uploads/rynZIlp3Gx.png)
+![image](https://hackmd.io/_uploads/BkUfUl6hfx.png)
+![image](https://hackmd.io/_uploads/SyWmUgahfg.png)
+![image](https://hackmd.io/_uploads/ry94LlpnGe.png)
+![image](https://hackmd.io/_uploads/HkmrLxa3Ge.png)
+![image](https://hackmd.io/_uploads/SyUdIxT3Ge.png)
+![image](https://hackmd.io/_uploads/BJiKUlT3fl.png)
+![image](https://hackmd.io/_uploads/ryq9Ula3Gx.png)
+![image](https://hackmd.io/_uploads/r1HRPgTnMe.png)
+![image](https://hackmd.io/_uploads/HJj1OeThfx.png)
+![image](https://hackmd.io/_uploads/rk9aOl62Ml.png)
+![image](https://hackmd.io/_uploads/rkXA_gpnfx.png)
+![image](https://hackmd.io/_uploads/HJlytg6nGg.png)
+![image](https://hackmd.io/_uploads/HJqyFe62Ge.png)
+![image](https://hackmd.io/_uploads/SyXlYxp3zx.png)
+
+> **Partitionnement LVM** : par défaut, l'installateur Ubuntu n'alloue qu'environ 50 % du volume group à `/` (~24 Go). J'ai modifié `ubuntu-lv` pour lui donner la taille maximale (**47.996G**), car l'indexer Wazuh stocke beaucoup de données.
+
+![image](https://hackmd.io/_uploads/rkjNYxT3fg.png)
+![image](https://hackmd.io/_uploads/rk88tlpnzl.png)
+![image](https://hackmd.io/_uploads/B1Gwtgphzx.png)
+![image](https://hackmd.io/_uploads/SJcPKgT3fx.png)
+![image](https://hackmd.io/_uploads/SJQdtg63Gg.png)
+![image](https://hackmd.io/_uploads/S1VFFxT2Ml.png)
+![image](https://hackmd.io/_uploads/rkgqYxanze.png)
+![image](https://hackmd.io/_uploads/Hyxd9Yxp2Me.png)
+![image](https://hackmd.io/_uploads/S1WsFxahzl.png)
+![image](https://hackmd.io/_uploads/BkFsFla2zx.png)
+
+### C.1.2 Connexion au serveur
+
+> **Erreur rencontrée** : la console VMware refusait le mot de passe.
+> **Cause** : la disposition du clavier de la console (QWERTY/AZERTY) différait de celle utilisée à l'installation.
+> **Solution** : connexion en SSH depuis Windows. L'IP a été retrouvée sans se connecter, via les baux DHCP de VMware :
+
+```powershell
+Get-Content C:\ProgramData\VMware\vmnetdhcp.leases | Select-String -Context 0,6 "192.168.129"
+```
+![image](https://hackmd.io/_uploads/BJkRtgp3zl.png)
+
+→ `lease 192.168.129.133` / `client-hostname "wazuh-server"`
+
+![image](https://hackmd.io/_uploads/SyOJ9epnfe.png)
+
+```powershell
+ssh alexandra@192.168.129.133
+```
+![image](https://hackmd.io/_uploads/HJVxqxphGg.png)
+![image](https://hackmd.io/_uploads/BJfb5xTnfx.png)
+
+### C.1.3 Mise à jour du système
+
+```bash
+sudo apt update && sudo apt upgrade -y
+```
+![image](https://hackmd.io/_uploads/SJJG9gpnfe.png)
+![image](https://hackmd.io/_uploads/ByPGqla2ze.png)
+![image](https://hackmd.io/_uploads/BJsXqlTnfl.png)
+![image](https://hackmd.io/_uploads/HkSr9ea3Gg.png)
+![image](https://hackmd.io/_uploads/ByaH5lpnMg.png)
+
+### C.1.4 Import de la clé GPG Wazuh
+
+```bash
+curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | sudo gpg --no-default-keyring --keyring gnupg-ring:/usr/share/keyrings/wazuh.gpg --import && sudo chmod 644 /usr/share/keyrings/wazuh.gpg
+```
+
+Résultat : `gpg: Total number processed: 1` / `imported: 1`
+
+> **Erreur rencontrée** : `Permission denied` sur `/usr/share/keyrings/`.
+> **Cause** : la documentation Wazuh suppose une session root (`#`), or j'avais lancé `gpg` et `chmod` sans `sudo`.
+> **Solution** : ajout de `sudo` devant `gpg` et `chmod`.
+
+### C.1.5 Installation all-in-one (Wazuh 4.14)
+
+```bash
+curl -sO https://packages.wazuh.com/4.14/wazuh-install.sh && sudo bash ./wazuh-install.sh -a
+```
+
+Durée : ~10-15 minutes.
+
+### C.1.6 Récupération du mot de passe admin
+
+```bash
+sudo tar -O -xvf wazuh-install-files.tar wazuh-install-files/wazuh-passwords.txt | grep -A1 "indexer_username: 'admin'"
+```
+
+> Le mot de passe est généré aléatoirement. Il est conservé dans un gestionnaire de mots de passe et n'apparaît pas dans cette documentation.
+
+### C.1.7 Vérification
+
+- Dashboard accessible : `https://192.168.129.133`
+- Connexion réussie avec l'utilisateur `admin`
+- Premières alertes remontées (auto-surveillance du serveur)
+
+> Capture : page de connexion et Overview du dashboard
+
+**Serveur Wazuh opérationnel.**
+
+---
+
+## C.2 Déploiement de l'agent Wazuh sur RHEL 10
+
+> Référence : [Deploying Wazuh agents on Linux endpoints](https://documentation.wazuh.com/current/installation-guide/wazuh-agent/wazuh-agent-package-linux.html)
+>
+> La procédure officielle comporte 3 étapes : **ajouter le dépôt Wazuh**, **déployer l'agent** avec des variables de déploiement (`WAZUH_MANAGER`, nom de l'agent…), puis **désactiver les mises à jour Wazuh**.
+
+> **Erreur rencontrée** : `sudo: apt-get : commande introuvable`.
+> **Cause** : j'avais suivi l'onglet **APT** (Debian/Ubuntu). RHEL utilise **DNF** (paquets RPM).
+> **Solution** : utiliser l'onglet **DNF** de la documentation.
+
+### C.2.1 Nom d'hôte de la VM
+
+Sans nom d'hôte, l'agent apparaîtrait comme « localhost » dans le dashboard.
+
+```bash
+sudo hostnamectl set-hostname rhel10
+```
+![image](https://hackmd.io/_uploads/HyyNIUTnfe.png)
+
+### C.2.2 Ajout du dépôt Wazuh
+
+Import de la clé GPG :
+
+```bash
+sudo rpm --import https://packages.wazuh.com/key/GPG-KEY-WAZUH
+```
+![image](https://hackmd.io/_uploads/r1yS88Tnfg.png)
+
+Création du dépôt (syntaxe officielle **RHEL 9 et versions ultérieures**) :
+
+```bash
+sudo tee /etc/yum.repos.d/wazuh.repo << EOF
+[wazuh]
+gpgcheck=1
+gpgkey=https://packages.wazuh.com/key/GPG-KEY-WAZUH
+enabled=1
+name=EL-\$releasever - Wazuh
+baseurl=https://packages.wazuh.com/4.x/yum/
+priority=1
+EOF
+```
+![image](https://hackmd.io/_uploads/BJeLUUahfg.png)
+
+### C.2.3 Installation et enregistrement de l'agent
+
+```bash
+sudo WAZUH_MANAGER="192.168.129.133" WAZUH_AGENT_NAME="rhel10" dnf install -y wazuh-agent
+```
+![image](https://hackmd.io/_uploads/SyidI8T3fx.png)
+
+| Variable de déploiement | Rôle |
+|---|---|
+| `WAZUH_MANAGER` | Adresse du serveur Wazuh auquel l'agent envoie ses données |
+| `WAZUH_AGENT_NAME` | Nom de l'agent affiché dans le dashboard |
+
+Résultat : `wazuh-agent-4.14.9-1.x86_64` installé → `Terminé !`
+
+### C.2.4 Démarrage du service
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now wazuh-agent
+sudo systemctl status wazuh-agent    # attendu : active (running)
+```
+![image](https://hackmd.io/_uploads/BkgBvUahMl.png)
+![image](https://hackmd.io/_uploads/ByDHvUphzl.png)
+![image](https://hackmd.io/_uploads/HJgIwIT2zg.png)
+
+### C.2.5 Désactivation des mises à jour Wazuh
+
+La compatibilité n'est garantie que si la version du manager est **supérieure ou égale** à celle de l'agent. On désactive donc le dépôt pour éviter une mise à jour accidentelle via `dnf update` :
+
+```bash
+sudo sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/wazuh.repo
+```
+![image](https://hackmd.io/_uploads/rJVowLp2Gg.png)
+
+**Agent `rhel10` connecté au manager.**
+
+---
+
+## C.3 Test de détection n°1 : Brute force SSH
+
+### C.3.1 Simulation de l'attaque (depuis poste-admin)
+
+Tentatives de connexion répétées avec un utilisateur inexistant :
+
+```powershell
+1..8 | ForEach-Object { ssh -o ConnectTimeout=5 pirate@192.168.129.132 exit }
+```
+![image](https://hackmd.io/_uploads/H1U1uL6nMl.png)
+
+### C.3.2 Analyse dans Wazuh
+
+**Threat Hunting → Events**, filtre `agent.name: rhel10`
+
+| Rule ID | Niveau | Description |
+|---|---|---|
+| 5710 | 5 | sshd: Attempt to login using a non-existent user |
+| 5503 | 5 | PAM: User login failed |
+| 2502 | 10 | syslog: User missed the password more than one time |
+
+![image](https://hackmd.io/_uploads/H13fuLThMg.png)
+![image](https://hackmd.io/_uploads/HkkDdL6nGl.png)
+![image](https://hackmd.io/_uploads/S1HOd863Gl.png)
+
+
+### C.3.3 Interprétation
+
+- Chaque tentative génère une alerte **5710** (niveau 5) : utilisateur `pirate` inconnu.
+- Wazuh **corrèle** les échecs répétés en une alerte **2502** de **niveau 10**, plus grave, qui signale un comportement suspect plutôt qu'un événement isolé.
+
+**Test validé** : l'attaque est détectée et correctement qualifiée.
+
+---
+
+## C.3 Déploiement de l'agent Wazuh sur Windows (poste-admin)
+
+> Référence : [Deployment variables for Windows](https://documentation.wazuh.com/current/user-manual/agent/agent-enrollment/deployment-variables/deployment-variables-windows.html#deployment-variables-for-windows)
+>
+> Sous Windows, l'agent est distribué sous forme de paquet **MSI**. Les **variables de déploiement**, passées en paramètres de `msiexec`, permettent d'installer, d'enregistrer et de configurer l'agent en une seule commande, sans modifier manuellement le fichier `ossec.conf`.
+
+### C.3.1 Prérequis
+
+| Élément | Valeur |
+|---|---|
+| Machine | poste-admin (Windows, 192.168.129.1) |
+| Manager Wazuh | 192.168.129.133 |
+| Version de l'agent | **4.14.9** (identique au manager, l'agent ne doit jamais être plus récent) |
+| Droits | PowerShell **exécuté en tant qu'administrateur** |
+
+> Une session PowerShell administrateur s'ouvre sur `PS C:\WINDOWS\system32>`. Si le prompt affiche `PS C:\Users\<nom>>`, la session n'est probablement pas élevée.
+>
+> Vérification :
+> ```powershell
+> ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+> ```
+> Résultat attendu : `True`
+
+### C.3.2 Variables de déploiement utilisées
+
+| Variable | Valeur | Rôle |
+|---|---|---|
+| `WAZUH_MANAGER` | `192.168.129.133` | Adresse du manager auquel l'agent se connecte |
+| `WAZUH_AGENT_NAME` | `poste-admin` | Nom de l'agent affiché dans le dashboard |
+
+> Autres variables disponibles (non utilisées dans ce lab) : `WAZUH_AGENT_GROUP` (groupe de l'agent), `WAZUH_REGISTRATION_PASSWORD` (mot de passe d'enrôlement), `WAZUH_MANAGER_PORT` / `WAZUH_REGISTRATION_SERVER`, etc.
+
+### C.3.3 Téléchargement du paquet
+
+```powershell
+Invoke-WebRequest -Uri https://packages.wazuh.com/4.x/windows/wazuh-agent-4.14.9-1.msi -OutFile $env:TEMP\wazuh-agent.msi
+
+Start-Process msiexec.exe -ArgumentList "/i `"$env:TEMP\wazuh-agent.msi`" /q /l*v `"$env:TEMP\wazuh-install.log`" WAZUH_MANAGER=192.168.129.133 WAZUH_AGENT_NAME=poste-admin" -Wait # Installation et enregistrement
+```
+![image](https://hackmd.io/_uploads/HJMpuL63fg.png)
+
+
+| Option | Rôle |
+|---|---|
+| `/i` | Installer le paquet |
+| `/q` | Mode silencieux (aucune fenêtre) |
+| `/l*v` | Journal d'installation détaillé, utile au diagnostic |
+| `-Wait` | Attend la fin de l'installation avant de rendre la main |
+
+### C.3.4 Démarrage du service
+
+```powershell
+NET START WazuhSvc
+```
+![image](https://hackmd.io/_uploads/r1QDtLTnGx.png)
+
+Résultat attendu : `Le service Wazuh a démarré.`
+
+*Résultat obtenu : À compléter*
+
+### C.3.5 Vérification
+
+- Service présent et démarré :
+  ```powershell
+  Get-Service WazuhSvc
+  ```
+- Agent `poste-admin` visible et **Active** dans le dashboard (**Agents management → Summary**)
+
+![image](https://hackmd.io/_uploads/S1xosYIanze.png)
+
+### C.3.7 Incident rencontré
+
+> **Erreur** : après `msiexec /i .\wazuh-agent-4.14.9-1.msi /q ...`, la commande `Start-Service wazuhsvc` répond « Impossible de trouver un service », et `NET START WazuhSvc` répond « Le nom de service n'est pas valide ».
+>
+> **Cause** : l'installation a échoué **sans message**, car le mode `/q` masque les erreurs :
+> - PowerShell n'était pas lancé **en administrateur** ;
+> - `msiexec` rend la main immédiatement, si bien que le service était démarré avant la fin, voire l'absence, de l'installation.
+>
+> **Solution** : PowerShell en administrateur, `Start-Process ... -Wait` pour attendre la fin de l'installation, et `/l*v` pour journaliser.
+>
+> *Résolution confirmée : À compléter*
+
+---
+
+## 5. Récapitulatif des incidents rencontrés
+
+| # | Problème | Cause | Solution |
+|---|---|---|---|
+| 1 | `REMOTE HOST IDENTIFICATION HAS CHANGED` en SSH | Ancienne empreinte associée à la même IP | `ssh-keygen -R <IP>` |
+| 2 | Mot de passe refusé dans la console Ubuntu | Disposition clavier de la console | Connexion SSH + IP retrouvée via `vmnetdhcp.leases` |
+| 3 | `/` limité à ~24 Go sur Ubuntu | Allocation LVM par défaut à 50 % | Extension de `ubuntu-lv` au maximum à l'installation |
+| 4 | `Permission denied` lors de l'import GPG | Commandes root lancées sans `sudo` | Ajout de `sudo` |
+| 5 | `apt-get : commande introuvable` sur RHEL | Mauvais gestionnaire de paquets | Utilisation de `dnf` (RPM) |
+| 6 | Dépôt Wazuh en `protect=1` | Syntaxe RHEL 8 utilisée sur RHEL 10 | Remplacement par `priority=1` |
+
+---
+
+## 6. Bilan
+
+### Difficultés rencontrées
+
+| Difficulté | Comment je l'ai résolue |
+|---|---|
+| Alerte SSH `REMOTE HOST IDENTIFICATION HAS CHANGED` après la réinstallation de la VM | J'ai compris que l'ancienne empreinte était liée à la même IP, et je l'ai supprimée avec `ssh-keygen -R` |
+| `man -k passwd` ne renvoyait « rien d'adéquat » | L'index des manuels n'existait pas encore sur une installation neuve ; je l'ai reconstruit avec `sudo mandb` |
+| Nom d'hôte resté sur `localhost.localdomain` | Je l'ai défini après l'installation avec `hostnamectl set-hostname` |
+| Utilisation de `apt-get` sur RHEL lors de l'installation de l'agent Wazuh | J'ai pris conscience que RHEL utilise `dnf` (paquets RPM) et non `apt` (Debian/Ubuntu) |
+| Commandes de la documentation Wazuh qui échouaient (`Permission denied`) | La documentation suppose une session root (`#`) ; j'ai ajouté `sudo` |
+
+### Ce que j'ai appris
+
+- **Se repérer sans Internet** : `man`, `man -k` / `apropos`, `help` et `--help` permettent de trouver une commande et ses options directement sur le système.
+- **Les sections du manuel** : une même page peut exister dans plusieurs sections, par exemple `man passwd` (section 1, la commande) et `man 5 passwd` (section 5, le fichier `/etc/passwd`). L'option `apropos -s 8` cible les commandes d'administration.
+- **Les types de commandes** : `type` distingue une primitive du shell (`cd`), un alias (`ls` → `ls --color=auto`) et un programme externe ; cela détermine où chercher l'aide (`help` ou `man`).
+- **Le rôle du PATH** : en cassant volontairement la variable, j'ai compris pourquoi une commande existante peut devenir « introuvable », et comment la diagnostiquer avec `echo $PATH`.
+- **L'enregistrement Red Hat** : il peut se faire dès l'installation, et le mode *Simple Content Access* donne accès aux dépôts BaseOS et AppStream sans abonnement à attacher.
+- **Aller plus loin** : en déployant Wazuh, j'ai appliqué ces bases à un cas concret de sécurité (installation d'un agent avec `dnf`, gestion d'un dépôt, détection d'une attaque brute force SSH).
+
+### Lien avec le RH124
+
+Ce TP couvre les **modules 1 à 3 du RH124** : accéder à un système RHEL en console et en SSH, travailler en ligne de commande avec Bash (historique, raccourcis, variables) et utiliser la documentation locale pour être autonome. Ce sont les réflexes de base attendus d'un administrateur, et ils m'ont directement servi pour la partie Wazuh.
+
+### Axes d'amélioration
+
+- Définir le nom d'hôte et le réseau **pendant** l'installation pour éviter les corrections après coup.
+- Créer le dossier de livrable **dès le début** du TP, afin de séparer clairement l'historique de chaque PPE.
+- Prendre l'habitude de vérifier le gestionnaire de paquets et les droits requis avant de copier une commande depuis une documentation.

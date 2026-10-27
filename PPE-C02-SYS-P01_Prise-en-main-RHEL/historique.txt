@@ -1,0 +1,55 @@
+    1  sudo apt update && sudo apt upgrade -y
+    2  rpm --import https://packages.wazuh.com/key/GPG-KEY-WAZUH
+    3  sudo hostnamectl set-hostname rhel10
+    4  sudo rpm --import https://packages.wazuh.com/key/GPG-KEY-WAZUH
+    5  cat > /etc/yum.repos.d/wazuh.repo << EOF
+    6  [wazuh]
+    7  gpgcheck=1
+    8  gpgkey=https://packages.wazuh.com/key/GPG-KEY-WAZUH
+    9  enabled=1
+   10  name=EL-\$releasever - Wazuh
+   11  baseurl=https://packages.wazuh.com/4.x/yum/
+   12  priority=1
+   13  EOF
+   14  sudo cat > /etc/yum.repos.d/wazuh.repo << EOF
+   15  [wazuh]
+   16  gpgcheck=1
+   17  gpgkey=https://packages.wazuh.com/key/GPG-KEY-WAZUH
+   18  enabled=1
+   19  name=EL-\$releasever - Wazuh
+   20  baseurl=https://packages.wazuh.com/4.x/yum/
+   21  priority=1
+   22  EOF
+   23  sudo tee /etc/yum.repos.d/wazuh.repo << EOF
+   24  [wazuh]
+   25  gpgcheck=1
+   26  gpgkey=https://packages.wazuh.com/key/GPG-KEY-WAZUH
+   27  enabled=1
+   28  name=EL-\$releasever - Wazuh
+   29  baseurl=https://packages.wazuh.com/4.x/yum/
+   30  protect=1
+   31  EOF
+   32  sudo WAZUH_MANAGER="192.168.129.133" WAZUH_AGENT_NAME="rhel10" dnf install -y wazuh-agent
+   33  systemctl daemon-reload
+   34  systemctl enable wazuh-agent
+   35  systemctl start wazuh-agent
+   36  sudo systemctl status wazuh-agent
+   37  sed -i "s/^deb /#deb /" /etc/apt/sources.list.d/wazuh.list
+   38  sudo sed -i "s/^enabled=1/enabled=0/" /etc/yum.repos.d/wazuh.repo
+   39  man ls
+   40  man -k passwd
+   41  sudo mandb
+   42  man -k passwd
+   43  help cd
+   44  cd --help
+   45  type cd
+   46  type ls
+   47  sudo subscription-manager status
+   48  sudo dnf repolist
+   49  export PATH=/tmp
+   50  ls
+   51  echo $PATH
+   52  export PATH=/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+   53  ls
+   54  apropos partition
+   55  apropos -s 8 user 
